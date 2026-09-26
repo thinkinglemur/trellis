@@ -1,0 +1,10 @@
+{
+  "name": "@app/contracts",
+  "version": "0.1.0",
+  "description": "FMA shared contracts — the ONLY package modules may import beyond themselves. Changes require federation review + human ratification (Workflow B).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "dependencies": { "zod": "^3.23.0" },
+  "devDependencies": { "typescript": "^5.5.0", "vitest": "^2.0.0" }
+}

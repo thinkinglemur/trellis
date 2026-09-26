@@ -1,0 +1,7 @@
+# FMA protected paths — human ratification required (Workflows B/C/D).
+# Replace @OWNER with the responsible engineer(s).
+/packages/contracts/   @OWNER
+/templates/base-module/ @OWNER
+/MODULES.md            @OWNER
+/models.yaml           @OWNER
+/federation/           @OWNER

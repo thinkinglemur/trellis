@@ -1,0 +1,40 @@
+# Trellis model routing — one role per pipeline stage / architecture mode.
+# Skills read this at session start. Routing is per-workflow, not per-session.
+roles:
+  definition:   # Stages 1-3: PDD, MVP, data model authorship
+    provider: anthropic
+    model: claude-fable-5
+    min_tier: frontier
+  design:       # Stage 4-5: research synthesis, flows, visual spec, prototype brief
+    provider: anthropic
+    model: claude-fable-5
+    min_tier: frontier
+  spec:         # Stage 6 / Workflow Zero: SPEC/ARCH/TICKETS/METRICS
+    provider: anthropic
+    model: claude-fable-5
+    min_tier: frontier
+  federation:   # Workflows B/C: contract review, per-module specs, promotion, sequencing
+    provider: anthropic
+    model: claude-fable-5
+    min_tier: frontier
+  module:       # Workflow A: bounded implementation against executable spec
+    provider: ollama
+    model: qwen3-coder:32b-q5_K_M
+    endpoint: http://localhost:11434
+    min_tier: any
+  qa:           # Visual QA generation and execution
+    provider: ollama
+    model: qwen3-coder:32b-q5_K_M
+    endpoint: http://localhost:11434
+    min_tier: any
+  escalation:   # after max_local_cycles failed verification loops
+    provider: anthropic
+    model: claude-sonnet-4-6
+
+escalation:
+  max_local_cycles: 3
+  max_escalation_cycles: 2     # after this the OPERATOR is interrupted (the only stop in fast mode)
+  carry_context: summary
+
+enforcement:
+  refuse_small_model_for: [definition, design, spec, federation]
