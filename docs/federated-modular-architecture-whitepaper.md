@@ -86,6 +86,7 @@ All interfaces, shared types, and event schemas live in a dedicated workspace pa
 - Is versioned, with breaking changes requiring a deprecation window.
 - Is protected: changes require federation-layer review and human approval (enforced via a CODEOWNERS-style rule).
 - Ships with **contract tests** — executable assertions of interface behaviour that every implementing module must pass in CI.
+- Carries each entity's **closed state enumeration and allowed transitions**, so an illegal transition is a contract-test failure and a runtime refusal; invariant changes are therefore Workflow B changes by definition (companion paper §13.2).
 - Carries **authorisation as contract**: every declared route states its required actor role, and contract tests assert that calls without it are refused. Authorisation is thereby a mechanically verified surface, not a per-module convention.
 - Carries the **event schemas** that modules emit, including the use-case funnel events derived upstream from the product definition (companion paper, Observability), so instrumentation is part of the contract rather than an afterthought.
 
@@ -100,7 +101,8 @@ The boundaries are made real by:
 | Per-module agent instruction files | Scope, conventions, and forbidden actions, loaded automatically into the agent's context |
 | Contract test suite | Behavioural conformance to interfaces |
 | Cross-module integration test suite | Emergent behaviour across module boundaries |
-| Use-case E2E and visual test suite (gate 5) | Acceptance criteria and step-count invariant, generated from use cases; screenshot comparison against the prototype |
+| Use-case E2E and visual test suite (gate 5) | Coverage manifest first, then acceptance criteria, failure paths, abuse cases, invariant refusal/response, and the step-count invariant; screenshot comparison against the prototype |
+| Fault-injection flag in the local substrate | One environment switch that fails the data store or an external call on demand, for Workflow E and dependency-failure tests |
 | Security substrate (secret scanning, dependency audit, auth scaffold in base module) | Baseline security without a dedicated phase |
 | Events sink, error tracker, structured logging convention | Observability from the first module, proportionate to an MVP |
 | Protected-path review rules | Human gate on the contracts package and base module |
@@ -120,6 +122,7 @@ The federation layer is the **contract authority** of the system. It does not wr
 4. **Sequencing.** Planning the rollout order of breaking interface changes across modules, using versioned interfaces and deprecation windows rather than big-bang swaps.
 5. **Escalation.** Packaging architectural decisions — promotions, breaking changes, new modules — as recommendations with rationale for human ratification.
 6. **Security review.** Any contract change touching a classified entity or an authentication surface carries a security section in the review artefact (data classification is inherited from the product definition's derived data model).
+7. **Waivers and findings.** Failure-class waivers at the contract level, invariant changes, and the classification of adversarial findings (Workflow E) are federation decisions ratified by the engineer. Module agents never waive a failure class or relax an assertion.
 
 ### 4.2 Implementation: workflow, not resident agent
 
@@ -149,10 +152,22 @@ Module-internal changes that pass module tests, contract tests, and boundary lin
 1. A task is filed against a single module.
 2. A module agent session is opened, scoped to that module's directory plus the contracts package.
 3. The agent implements against existing contracts; module tests and contract tests run locally.
-4. CI verifies boundary lint, contract conformance, integration tests, and — the fifth gate — the use-case end-to-end and visual tests generated from the product definition (companion paper §10.4), which assert acceptance criteria and the step-count invariant against the verified prototype.
+4. CI verifies boundary lint, contract conformance, integration tests, and — the fifth gate — the use-case end-to-end and visual tests generated from the product definition (companion paper §10.4). Gate 5 first asserts a **coverage manifest** (every use case the ticket serves has a specification containing its happy path, every non-waived failure path, its abuse cases, and its invariant refusal and response tests); a missing mapping fails exactly as a failing assertion does. A ticket cannot close with uncovered failure paths.
 5. Light human review; merge.
 
 No federation involvement. This should be the overwhelming majority of changes.
+
+### 5.1a Execution within a ticket — tasks and dispatch
+
+A ticket is the unit of ownership and acceptance: what done means, with tests. A task is the unit of execution: what one agent does in one sitting, on a set of files it alone owns. The two are different layers, and an architecture that defines only the first leaves the agent to take the cheapest path — one session doing everything serially — however often the word "fan-out" appears in its documentation.
+
+A ticket larger than one sitting is run by a **coordinator**: the main session of a module worktree, which decomposes the ticket into `TASKS.md` by **file ownership, not activity**. Wave one is always the named tests and compiling, failing interface stubs; nothing else starts until that wave passes typecheck and lint. Wave two is parallel implementers, each owning disjoint files. Wave three is the coordinator running the gates and fixing seams only. Workers are dispatched together with a fixed brief (ticket excerpt, task row, owned files, read-only contracts, the tests to turn green) and return only a fixed report; they coordinate through shared artefacts — `TASKS.md`, the stubs, the failing tests — not through messages. Depth is two: coordinators across modules run in parallel worktrees launched by the human or a script, workers are subagents of a coordinator, and workers never nest. Intra-ticket parallelism is permitted in governed and fast mode alike; precondition ordering (companion paper §9.4) is a relation between use cases, not between a ticket's tasks.
+
+Gates run in cost order — typecheck, boundary lint, contract tests, module tests — and the end-to-end gate runs only on a build that has passed the first four. Running the slowest gate on a red build is the single largest avoidable cost in a verification loop.
+
+### 5.1b The shell module
+
+A use case crosses modules; each module owns its own views; the seams appear in the interface. The structural answer is a **shell module** that owns screen composition, navigation, and conformance to the visual specification. Other modules export components through a declared `ui/` surface listed in their manifest and never pages; the shell is the one module permitted to import `@modules/*/ui`, enforced as a lint exception. Tickets are cut as vertical slices per use case: module tickets for data, API, and components, plus one integration ticket owned by the shell that composes the screens and carries gate 5 — the use case's end-to-end and visual tests — as acceptance. This is the concrete mechanism for the companion paper's rule that screens are owned by use cases and data by modules (ODPD §10.3), and it adds one module to the decomposition, not a new layer.
 
 ### 5.2 Workflow B — Cross-cutting change
 
@@ -170,7 +185,14 @@ No federation involvement. This should be the overwhelming majority of changes.
 3. The human ratifies, amends, or rejects.
 4. On ratification, the shared service is created (itself a module, with a contract), and migration specs are fanned out via Workflow B.
 
-### 5.4 Workflow D — New module creation
+### 5.4 Workflow E — Adversarial session
+
+1. At the end of each build phase (automatically in fast mode; on request in governed mode), an agent on the QA tier is given the running local environment, the contracts package (invariants, transitions, required roles), and the failure paths, with the sole objective of violating invariants: out-of-order steps, mid-flow interruption, replay, concurrent actors, fuzzed input, and dependency faults via the substrate's single fault-injection flag.
+2. The session produces a findings report. It classifies nothing and changes nothing.
+3. The federation layer classifies each finding with the engineer: a defect against an existing failure path (ticket, Workflow A) or an unanticipated failure (proposed failure path to the owner through the amendment loop, then regeneration of the affected specifications). In fast mode the classification is auto-accepted and queued.
+4. Agent-found failures may add assertions and may never relax one.
+
+### 5.5 Workflow D — New module creation
 
 1. The generator stamps a new module from the base module template.
 2. The module instruction file is populated (purpose, boundaries, conventions).
@@ -188,9 +210,13 @@ No federation involvement. This should be the overwhelming majority of changes.
 | F4 | Context overflow at the federation layer | Orchestrator reviews everything and recreates the original problem one level up | Federation reviews **interface docs and contract diffs only**; implementation internals are the module's concern, verified by module tests; subagents return summaries |
 | F5 | Duplication accumulation | Module isolation hides convergent reimplementation | Periodic federation duplication scan; tolerated-then-promoted policy |
 | F6 | Boundary erosion | Agents route around boundaries via copy-paste, re-export tricks, or filesystem reach | Boundaries enforced mechanically (lint, package isolation, read-only mounts where available), not conventionally |
+| F13 | Fan-out asserted, not operationalised | Documentation says work parallelises; no skill says how to dispatch, so one session does everything | Coordinator form of Workflow A with TASKS.md, worker brief, report format, and worktree topology (Section 5.1a) |
+| F14 | Seams in the interface | Each module owns views; cross-module use cases show the joins | Shell module owns composition; modules export components; vertical-slice tickets with gate 5 acceptance (Section 5.1b) |
 | F7 | Integration regression | Module-local tests pass while cross-module behaviour breaks | Dedicated cross-module integration suite owned at the federation level, run in CI on every merge |
 | F8 | Interface ossification or churn | Contracts change too rarely (workarounds accumulate) or too often (constant migration tax) | Human governance gate calibrates cadence; deprecation windows amortise migration cost; federation review surfaces workaround patterns as promotion/contract-change signals |
 | F9 | Base-module drift | The template falls behind live conventions, so new modules are born outdated | Base module treated as protected, versioned artefact; periodic federation review includes template currency check |
+| F11 | Vacuous gate | A test gate passes because no test exists for the change | Gate 5 asserts coverage before running (Section 5.1) |
+| F12 | Self-weakening verification | An agent relaxes or deletes an assertion to reach green | Module sessions may not waive or weaken; adversarial findings are add-only; waivers are federation decisions |
 | F10 | Human rubber-stamping | Governance gate degrades into approval theatre under volume | Limit the gate to genuinely architectural decisions (contracts, promotions, modules); keep Workflow A human-light so reviewer attention is conserved for Workflows B–D |
 
 ---
@@ -237,6 +263,7 @@ The recommended deployment assigns models by the judgment demanded at each layer
 
 | Layer | Model class | Rationale |
 |---|---|---|
+| Adversarial sessions (Workflow E) | Quantised open-weight model, self-hosted | Exhaustive, mechanical probing against executable invariants; classification of findings is reserved to the federation tier |
 | Module agents (Workflow A; Workflow B implementation legs) | Quantised open-weight coding model, self-hosted (e.g. Qwen3-Coder 32B-class at Q4/Q5 via Ollama) | Implementation against a clear spec with executable verification; additional retry iterations are near-free locally |
 | Federation layer (review, specs, sequencing, promotion analysis) | Frontier hosted model | Contract review, ambiguity resolution, and spec authorship are precisely where weaker models fail, and a defective spec is amplified across every module (failure mode F1) |
 | Escalation path | Frontier hosted model, on demand | Tasks that fail N local verification cycles are escalated with full task context |
@@ -273,6 +300,7 @@ Fast mode auto-accepts **judgment** gates and never auto-accepts **enforcement**
 
 - **Auto-ratification with a record.** Every decision that would have awaited a human — a contract change, a promotion, a PDD amendment proposed by research, a visual specification, a walkthrough discrepancy resolution — is accepted automatically and recorded in the same place a human decision would be recorded (the review artefact, `DECISIONS.md`, the PDD change log, the walkthrough record), tagged `auto`. The debt is visible, not absent.
 - **Concurrent fan-out.** Precondition tiers collapse: all modules in a phase are implemented in parallel against the contracts package; per-tier verifiability is replaced by verification at the end of the phase (integration suite and the use-case E2E gate). Upstream, research and prototype construction parallelise per use case.
+- **Adversarial sessions run automatically** at the end of each phase (Workflow E); findings are classified `auto` and queued.
 - **Escalation remains the only stop.** The operator is interrupted only when a task exhausts both its local verification cycles and its escalation cycles (Section 8.3). Everything else proceeds.
 - **Enforcement is unchanged.** Boundary lint, contract tests, protected paths, the five-gate verification loop, and CI run exactly as in governed mode. A change that fails them fails in fast mode too. This is the line between fast mode and unstructured agentic building: the mechanics that make the codebase trustworthy do not have an off switch.
 

@@ -21,9 +21,28 @@ artefacts:
   SPEC.md: missing
   ARCH.md: missing
   TICKETS.md: missing
+  CHANNELS.md: missing
+  VALIDATION.md: missing
+  POSITIONING.md: missing
+  MESSAGING.md: missing
+  LEARNING.md: missing
   MODULES.md: missing
   substrate: missing        # trellis-init complete, CI green with zero modules
   e2e-suite: missing        # trellis-visual-qa generated tests
+  coverage-manifest: missing # tests/e2e/coverage.json — gate 5a
+  adversarial-reports: []   # federation/adversarial/*.md awaiting classification
+audience:                   # ODG second track — runs from Stage 1 (needs G1 for A1)
+  playbook: unset           # consumer | smb | enterprise | developer | internal
+  A1: pending   # rooms mapped, founder + owned channel chosen, participation begun
+  A2: pending   # owned list exists; tagged links; validation events flowing
+  A3: pending   # first level-2 test run against a pre-registered threshold
+  A4: pending   # demand evidence at pre-committed level, or override — BLOCKS G6
+  A5: pending   # launch gate
+  L:  pending   # first weekly learn session held
+validation:
+  level: unset              # pre-committed ladder level (owner)
+  decision: unset           # build | pivot | stop | override
+  override_reason: ""
 gates:                      # pending | passed | waived
   G1: pending   # PDD complete, outcomes rigorous
   G2: pending   # MVP closed under preconditions

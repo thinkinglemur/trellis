@@ -14,7 +14,10 @@ __MODULE_PURPOSE__
 - `src/manifest.ts` — ModuleManifest implementation (contract surface)
 - `src/routes.ts`   — route handlers (controller)
 - `src/models.ts`   — data access and domain logic (model)
-- `src/views.ts`    — response serialisation (view)
+- `src/views.ts`    — response serialisation (view, API)
+- `src/ui/`         — exported components (declared in manifest.components). Components, NEVER pages:
+                      screens are composed by the shell module (modules/shell), which owns navigation
+                      and VISUAL-SPEC.md. Nothing in ui/ imports another module.
 - `tests/`          — module tests + contract conformance tests
 
 ## Definition of done (verification loop — run ALL before finishing)

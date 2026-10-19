@@ -1,8 +1,18 @@
 {
   "name": "trellis",
-  "version": "0.2.0",
-  "description": "Trellis — a guided, gated method for building products with a two-person human team and AI agents: Outcome-Driven Product Definition upstream, Federated Modular Architecture downstream. Eleven modular skills that read a pipeline state file and guide you to the next step, for new projects or existing ones.",
-  "author": { "name": "SixBerries Ltd" },
+  "version": "0.5.0",
+  "description": "Trellis \u2014 a guided, gated method for building a business with a two-person human team and AI agents: Outcome-Driven Product Definition upstream, Federated Modular Architecture for the build, Outcome-Driven Growth for audience, validation, launch and learning. Sixteen modular skills that read a pipeline state file and guide you to the next step, for new projects or existing ones.",
+  "author": {
+    "name": "SixBerries Ltd"
+  },
   "license": "Apache-2.0",
-  "keywords": ["trellis", "fma", "odpd", "agentic-coding", "product-definition", "spec-driven", "orchestration"]
+  "keywords": [
+    "trellis",
+    "fma",
+    "odpd",
+    "agentic-coding",
+    "product-definition",
+    "spec-driven",
+    "orchestration"
+  ]
 }

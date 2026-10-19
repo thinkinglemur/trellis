@@ -23,15 +23,20 @@ from `${CLAUDE_PLUGIN_ROOT}/templates/PIPELINE.md` if absent.
    actors → preconditions → steps one at a time ("what does the actor do; what does the system do")
    → outcome → failure paths. Assign `UC-nnn`. Show a running PDD summary after each.
 3. Enforce the **outcome rigour format** on every outcome: observable, state-expressed, bounded
-   (every side effect listed), testable. Rewrite with the owner until it passes. Never accept
+   (every side effect listed), testable, violation-specified (what happens if a clause does not hold). Rewrite with the owner until it passes. Never accept
    "the user sees success".
 4. Keep a **parking list** of gaps (actor with no use case, feature with no use case, noun in steps that
    never appears in an outcome). Raise it at natural pauses, not mid-use-case.
-5. **Abuse cases**: for each use case, propose abuse cases from `references/abuse-case-patterns.md`
+5. **Failure paths are derived, not elicited**: resolve EVERY step against `references/failure-taxonomy.md`.
+   Each step × class → a failure path `Fn` with its own rigorous outcome descriptor, or `waived: <reason>`.
+   Only the owner waives. An unresolved cell = incomplete use case = G1 fails. Record each "must" clause
+   of every outcome as an invariant candidate `INV-nnn` (enforcement point and violation response are
+   assigned in trellis-workflow-zero).
+6. **Abuse cases**: for each use case, propose abuse cases from `references/abuse-case-patterns.md`
    by screen/flow archetype. Same format; actor is an attacker or mistaken user; outcome states what
    must NOT happen and what the system does instead. Ids `AC-nnn`. Owner ratifies or waives each.
-6. Glossary: one canonical name per concept. Flag synonyms as they appear.
-7. Owner declares PDD v1 → G1 passed, `pdd_version: 1`. (This ratification is never auto, even in fast mode.)
+7. Glossary: one canonical name per concept. Flag synonyms as they appear.
+8. Owner declares PDD v1 → G1 passed, `pdd_version: 1`. (This ratification is never auto, even in fast mode.)
 
 ## Stage 2 — MVP (smallest testable value)
 1. Owner states the value hypothesis: "If <actor> can <outcome>, then <observable signal>."
@@ -42,7 +47,7 @@ from `${CLAUDE_PLUGIN_ROOT}/templates/PIPELINE.md` if absent.
 
 ## Stage 3 — Data model (derived, never invented)
 1. Entities = persistent nouns in outcomes. States = enumerated values outcomes assign (closed set,
-   failure outcomes included). Relationships = associations implied by steps. Side effects → event types.
+   failure outcomes included) PLUS the **allowed transitions** between them (closed; derived from steps). Relationships = associations implied by steps. Side effects → event types.
 2. **Classify every entity and field:** public | personal | financial | secret.
 3. Assign each entity an owning actor (informs module ownership later).
 4. Run the **bidirectional trace**: entity→use case (untraced → remove) and use case→model

@@ -10,6 +10,7 @@ export const manifest: ModuleManifest = {
   emits: [],
   consumes: [],
   useCases: [],
+  components: [],
   async health(): Promise<HealthReport> {
     return { status: 'ok' };
   },

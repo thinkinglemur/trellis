@@ -24,6 +24,25 @@ export interface ModuleRoute {
   requires: ActorRole;
 }
 
+/**
+ * Closed state enumerations + allowed transitions (ODPD §13.2). An illegal transition is a
+ * contract-test failure AND a runtime refusal via assertTransition. Changing these is Workflow B.
+ */
+export interface EntityStateMachine<S extends string> {
+  entity: string;
+  states: readonly S[];
+  transitions: ReadonlyArray<readonly [from: S, to: S]>;
+}
+export class InvariantViolation extends Error {
+  constructor(public invariant: string, public correlationId: string, message: string) { super(message); }
+}
+export function assertTransition<S extends string>(m: EntityStateMachine<S>, from: S, to: S, correlationId: string): void {
+  if (!m.transitions.some(([f, t]) => f === from && t === to)) {
+    // violation response: fail closed; caller preserves actor state, emits invariant.violated, shows error state with reference
+    throw new InvariantViolation(`INV-TRANSITION-${m.entity}`, correlationId, `${m.entity}: ${from} -> ${to} not allowed`);
+  }
+}
+
 /** Data classification — inherited from DATA-MODEL.md. Classified fields never appear in event payloads or logs. */
 export type DataClass = 'public' | 'personal' | 'financial' | 'secret';
 
@@ -66,6 +85,10 @@ export interface ModuleManifest {
   consumes: string[];
   /** use cases (UC-nnn) this module serves — drives funnel event emission and e2e mapping */
   useCases: string[];
+  /** UI components this module exports from ./ui (names). Only the shell module may import them. */
+  components?: string[];
+  /** 'shell' = owns screen composition/navigation/visual spec; may import @modules/*/ui. One per app. */
+  role?: 'module' | 'shell';
   /** liveness/readiness answer */
   health(): Promise<HealthReport>;
   /** lifecycle hooks */

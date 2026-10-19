@@ -16,7 +16,8 @@
 - **fast**: judgment decisions are auto-accepted, recorded where a human decision would be recorded, tagged
   `auto`, and appended to `ratification_queue` in PIPELINE.md. Only escalation exhaustion
   (`max_local_cycles` + `max_escalation_cycles`) interrupts the operator.
-- In BOTH modes the owner ratifies PDD v1 (G1) and MVP selection (G2). Never auto-accept those.
+- In BOTH modes the owner ratifies PDD v1 (G1), MVP selection (G2), every validation threshold and its
+  derivation, and the A4 build/pivot/stop decision. Never auto-accept those.
 - Enforcement gates (typecheck, boundary lint, contract tests, module tests, e2e/visual) NEVER auto-accept.
 
 ## Session end — every skill
@@ -29,3 +30,18 @@
 - A PDD version bump invalidates traces for affected use cases; skills re-run affected traces before proceeding.
 - Reference files (archetypes, state set, abuse patterns) are read, not copied into artefacts; cite them by id.
 - Never mark your own output ratified. Owner ratifies product artefacts; engineer ratifies contracts.
+
+## Decision authority (who may decide what — orchestrators with humans, never module agents)
+| Decision | Proposed by | Ratified by | Module agent may? |
+|---|---|---|---|
+| Failure-class waiver, product level (Stage 1) | definition skill | owner | never |
+| Failure-class waiver, contract level | federation | engineer | never |
+| Invariant change / allowed-transition change | federation | engineer (Workflow B) | never |
+| Adversarial finding classification (defect vs new failure path) | federation | engineer (+ owner if PDD amendment) | never |
+| Relaxing or deleting any assertion | — | nobody; add-only | never |
+| PDD amendment of any kind | any skill | owner | never |
+| Validation threshold X (per test, per project; no defaults) | validate skill presents benchmarks + economic floor | owner | never |
+| A4 build / pivot / stop / override | validate skill presents options + implications | owner | never |
+| Hypothesis status (confirmed/refuted/refined) | learn skill presents evidence | owner + engineer | never |
+| Posting as the founder | — | nobody; agent drafts, owner posts | never |
+In fast mode "ratified by" becomes auto + queue; the "never" column does not change.
