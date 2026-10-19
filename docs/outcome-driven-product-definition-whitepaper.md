@@ -14,7 +14,7 @@ This paper defines **Outcome-Driven Product Definition (ODPD)**: a six-stage met
 
 The method is designed for a **two-person human team** — a product owner and an engineer — with agents filling the researcher, designer, and implementation roles. The intent is a smaller team that achieves more, faster, and correctly the first time. It is explicitly **not** the fastest route to a first demo: the definition, research, design, and verification stages take longer than an ideation session followed by unstructured "vibe coding." The trade is deliberate. Time spent upstream is repaid in the elimination of rework, the reduction of review burden, and the ability to run implementation on bounded agent sessions and smaller models (FMA §8), because what reaches implementation is already correct.
 
-Four recurring delivery failures — undetailed screen states, omitted conventional affordances, entity-shaped workflows, and unverified acceptance criteria — are treated as one class, implicit knowledge, and compensated by converting it to explicit-or-waived artefacts verified mechanically. Security is placed as a property of existing artefacts (abuse cases, data classification, authorisation as contract, CI scanning) rather than a phase, and observability is derived from the PDD as one north-star metric and one funnel per use case, on infrastructure proportionate to an MVP.
+Four recurring delivery failures — undetailed screen states, omitted conventional affordances, entity-shaped workflows, and unverified acceptance criteria — are treated as one class, implicit knowledge, and compensated by converting it to explicit-or-waived artefacts verified mechanically. Negative paths are derived per step from a failure taxonomy rather than elicited; every invariant carries an enforcement point and a defined violation response; the end-to-end gate asserts coverage before it asserts passing; and an adversarial agent session per build phase finds what the definition did not imagine. Security is placed as a property of existing artefacts (abuse cases, data classification, authorisation as contract, CI scanning) rather than a phase, and observability is derived from the PDD as one north-star metric and one funnel per use case, on infrastructure proportionate to an MVP.
 
 The method mirrors the governing idea of FMA at the product layer. In FMA, contracts are the single coupling surface and contract tests are the executable spec that lets agents implement safely. In ODPD, **use cases are the single coupling surface** between owner, designer, engineer, and agent, and **the prototype plus the trace matrix are the executable spec** that lets specification be generated safely. Owner ownership replaces the human governance gate; the trace matrix replaces CI.
 
@@ -123,12 +123,13 @@ PDD.md
 
 ### 4.4 Outcome descriptor rigour
 
-An outcome descriptor must satisfy four conditions:
+An outcome descriptor must satisfy five conditions:
 
 1. **Observable** — it states what exists or is displayed, not what the user feels or understands.
 2. **State-expressed** — it names the entities and the states they are in after the use case completes.
 3. **Bounded** — it lists every side effect (notifications, events, records) so that nothing happens that the descriptor did not declare.
 4. **Testable** — a reader could write a pass/fail check from it without further information.
+5. **Violation-specified** — for each clause that must hold, the descriptor (or the invariant it references) states what the system does if it does not hold: the refusal, the state preserved, the event emitted, and what the actor sees (§13).
 
 Weak: *"The user sees that their order went through."*
 Compliant: *"An Order exists in state `confirmed` with the submitted line items; the actor is shown the order reference; a confirmation notification has been sent to the actor's registered address; an `order.confirmed` event has been emitted."*
@@ -325,7 +326,7 @@ An omitted "forgot password" link is not a design omission; it is a **missing us
 
 ### 10.3 Screens follow use cases; data follows modules (Stage 6)
 
-ODPD designs from use cases, but the risk of entity-shaped workflows re-enters at Workflow Zero, where backend modules are entity-owned and it is natural to build one screen per module. The rule that prevents this: **screens are owned by use cases; data is owned by modules.** A screen composes information across modules through the contracts package — which is what the contracts package exists for — and presents the actor with everything needed to complete the primary purpose in one place, even when that spans several entities. The verification is a **step-count invariant**: the prototype's step count per use case may not exceed the PDD's, and the implementation's may not exceed the prototype's. A step-count increase is a regression, caught by the walkthrough at Stage 5 and by visual QA (§10.4) at implementation.
+ODPD designs from use cases, but the risk of entity-shaped workflows re-enters at Workflow Zero, where backend modules are entity-owned and it is natural to build one screen per module. The rule that prevents this: **screens are owned by use cases; data is owned by modules.** A screen composes information across modules through the contracts package — which is what the contracts package exists for — and presents the actor with everything needed to complete the primary purpose in one place, even when that spans several entities. The verification is a **step-count invariant**: the prototype's step count per use case may not exceed the PDD's, and the implementation's may not exceed the prototype's. A step-count increase is a regression, caught by the walkthrough at Stage 5 and by visual QA (§10.4) at implementation. The build-side mechanism is the shell module (FMA §5.1b): one module owns screen composition and navigation, the others export components and never pages, and every use case gets an integration ticket owned by the shell with gate 5 as its acceptance.
 
 ### 10.4 Visual QA as the fifth verification gate (Stage 6 and FMA Workflow A)
 
@@ -359,7 +360,7 @@ Observability is built in from the first ticket, and kept light. The principle: 
 
 ### 12.1 Derived from the PDD
 
-The PDD already supplies the analytics schema. Every use case has a start, numbered steps, an outcome, and failure paths, so every use case is a funnel: `uc-nnn.started`, `uc-nnn.step.k`, `uc-nnn.completed`, `uc-nnn.failed_at.k`. The value hypothesis from Stage 2 names the **north-star metric**. The agent derives `METRICS.md` mechanically: one north-star metric; one funnel per MVP use case; failure-path counts; and the events that carry them — which are already declared in outcome descriptors, since a rigorous outcome lists its side effects (§4.4). The owner ratifies `METRICS.md` as it ratifies the data model. Classified fields (§11) are excluded from event payloads by rule.
+The PDD already supplies the analytics schema. Every use case has a start, numbered steps, an outcome, and failure paths, so every use case is a funnel: `uc-nnn.started`, `uc-nnn.step.k`, `uc-nnn.completed`, `uc-nnn.failed_at.k`. The value hypothesis from Stage 2 names the **north-star metric**. The agent derives `METRICS.md` mechanically: one north-star metric; one funnel per MVP use case; failure-path counts; `invariant.violated` counts (§13.2) as the single alerting metric; and the events that carry them — which are already declared in outcome descriptors, since a rigorous outcome lists its side effects (§4.4). The owner ratifies `METRICS.md` as it ratifies the data model. Classified fields (§11) are excluded from event payloads by rule.
 
 ### 12.2 Technical observability
 
@@ -371,7 +372,46 @@ One events table, one error tracker, health endpoints, structured logs. No metri
 
 ---
 
-## 13. Governance and Change Control
+## 13. Negative Paths, Invariants, and Violation Response
+
+Negative scenarios are the least-tested part of most products, for a structural reason: they are elicited rather than derived, so coverage depends on what the owner happened to imagine; they are treated as things to test for rather than things the system must respond to; and the test gate that should catch their absence passes vacuously when no test was written. The method closes all three.
+
+### 13.1 Failure paths are derived, not elicited (Stage 1)
+
+Every step of every use case is resolved against a **failure taxonomy**, in the same way every screen is resolved against an archetype (§10.2): invalid input, missing or revoked precondition, permission, duplicate or replayed action, concurrent modification, dependency failure (timeout, external service, data store), partial failure mid-sequence, and interruption or abandonment. For each step × class the result is a **failure path with its own outcome descriptor** or an explicit **waiver with a reason**. A use case with an unresolved cell on any step is incomplete and fails G1. This produces several negative descriptors per use case; the volume is templated and is precisely the kind of exhaustive work agents perform well. Each derived failure path then seeds the screen state matrix's error column (§10.1), the generated negative tests (§13.3), and the abuse cases (§11) mechanically.
+
+**Waivers are a governance act.** A module agent never waives a failure class. Waivers are made by the owner at Stage 1 (product-level) or by the engineer through federation review (contract-level), and recorded where decisions are recorded. In fast mode they are auto-accepted and queued like any other judgment decision.
+
+### 13.2 Invariants carry a violation response (Stages 3 and 6; FMA contracts)
+
+An acceptance criterion states what must be true. It needs a second half: what the system does when it is not, because something eventually will violate it and a test is not a runtime behaviour. Every invariant — derived from outcome descriptors' "must" clauses and abuse cases' "must not" clauses — carries three properties:
+
+1. **Enforcement point.** Where the violation is *refused* rather than detected afterwards: a data-store constraint, a schema, or an allowed-transition rule on an entity's closed state enumeration. Allowed transitions live in the contracts package alongside the state enumeration, so an illegal transition is a contract-test failure and a runtime refusal. An invariant change is therefore a Workflow B change by definition.
+2. **Violation response.** Fail closed; preserve the actor's in-progress state; emit `invariant.violated` with the invariant id and a correlation id; present the state-matrix error state with a reference the actor can quote. No invariant has a silent failure mode.
+3. **Tests for both.** One test proves the refusal; one proves the response. Both are generated with the use-case suite (§13.3).
+
+`invariant.violated` is added to `METRICS.md` (§12) as the one metric that warrants an alert at MVP: it is the signal that reality has diverged from the definition.
+
+### 13.3 Gate 5 is a coverage gate, not a pass gate (Stage 6; FMA Workflow A)
+
+A test gate that passes when no test exists enforces nothing. Gate 5 asserts a **coverage manifest** before it runs a single test: every MVP use case has a generated specification; every specification contains its happy path, every non-waived failure path, every abuse case targeting it, the invariant refusal and response tests, and the step-count invariant. A missing mapping fails CI exactly as a failing assertion does, and a module session cannot close a ticket whose use cases have uncovered failure paths. Coverage is therefore derived from acceptance criteria and flows and verified as *present*, not merely *passing*.
+
+### 13.4 Agentic adversarial testing (FMA Workflow E)
+
+Generated tests find what the definition imagined. An **adversarial session** — an agent on the QA tier driving the interface and the API with the explicit goal of violating invariants — finds what it did not: out-of-order steps, interruption mid-flow, replayed requests, concurrent actors, fuzzed inputs, and dependency faults injected through a single switch in the local substrate (one environment flag that makes the data store or an external call fail on demand; not a chaos platform). It runs at the end of every build phase, automatically in fast mode and on request in governed mode.
+
+Every finding is classified by the federation layer with the human, never by the adversarial agent itself: a **defect** against an existing failure path (a ticket), or a **failure the definition never anticipated** (a proposed failure path through the amendment loop, followed by regeneration of the affected specifications). One rule keeps the loop honest: an agent-found failure may add assertions and may never relax one.
+
+| Weakness | Compensation | Where | Gate |
+|---|---|---|---|
+| Failure paths elicited, not derived | Failure taxonomy resolved per step; waiver is a governance act | Stage 1 | G1 |
+| Invariants tested but not enforced | Enforcement point + violation response + tests for both; transitions in contracts | Stages 3, 6; FMA contracts | G3, G6 |
+| Vacuous test passes | Coverage manifest asserted before tests run | Stage 6; FMA Workflow A | Gate 5 |
+| Only imagined failures tested | Adversarial session per phase; findings classified by federation + human | FMA Workflow E | Phase end |
+
+---
+
+## 14. Governance and Change Control
 
 - **The owner is the sole ratifier** of PDD amendments, MVP scope, the data model, and the visual design specification. The agent (as researcher and designer) and the engineer propose; the owner decides. The agent never ratifies its own output. This is the product-layer analogue of FMA's human governance gate.
 - **Versioning is strict.** Every artefact declares its PDD version. A version bump invalidates traces for affected use cases; work on those use cases pauses until the trace is re-established.
@@ -380,23 +420,23 @@ One events table, one error tracker, health endpoints, structured logs. No metri
 
 ---
 
-## 14. Verification Gates
+## 15. Verification Gates
 
 | Gate | Checked artefact | Condition | Analogue in FMA |
 |---|---|---|---|
-| G1 | PDD v1 | Every use case complete; every outcome passes the rigour format | Contract definition |
+| G1 | PDD v1 | Every use case complete; every outcome passes the five-condition rigour format; every step resolved against the failure taxonomy (path or waiver) | Contract definition |
 | G2 | MVP subset | Closed under preconditions; value hypothesis stated; backlog complete | Protected-path review |
-| G3 | Data model | Bidirectional trace complete; every entity and field classified (§11) | Contract tests written before fan-out |
+| G3 | Data model | Bidirectional trace complete; every entity and field classified (§11); allowed transitions closed per entity; every invariant has an enforcement point and violation response | Contract tests written before fan-out |
 | G4 | Research, flows, visual spec | Competitive research recorded per MVP use case; every flow maps to use cases; screen state matrix has no undesigned-unwaived cell; every screen resolved against its archetype checklist; visual spec ratified; all amendments ratified | Federation review artefact |
 | G5 | Prototype | Every MVP use case has a passing walkthrough record | Contract conformance |
-| G6 | Trace matrix | No empty MVP cells (abuse cases included); Phase 0 defined with events sink, error tracker, and security substrate; build order in precondition sequence; use-case E2E tests generated as FMA gate 5 | CI pipeline |
+| G6 | Trace matrix | No empty MVP cells (abuse cases included); Phase 0 defined with events sink, error tracker, and security substrate; build order in precondition sequence; use-case E2E tests generated and the coverage manifest complete (§13.3) | CI pipeline |
 | G7 | METRICS.md | North-star metric and one funnel per MVP use case derived and ratified; no classified field in any event payload | Contract event schemas |
 
 Gates are checked by agents and ratified by the owner. A gate that fails does not block the stage from continuing its own work; it blocks the handoff to the next stage.
 
 ---
 
-## 15. Failure Modes and Mitigations
+## 16. Failure Modes and Mitigations
 
 | # | Failure mode | Description | Mitigation |
 |---|---|---|---|
@@ -414,11 +454,15 @@ Gates are checked by agents and ratified by the owner. A gate that fails does no
 | D12 | Competitor reproduction | Agent copies competitor visuals, copy, or assets into design or prototype | Patterns-not-reproductions constraint (§7.2); owner reviews prototype against the constraint at G5 |
 | D13 | Research substitution | Competitive research treated as equivalent to observing users | User-research cell must be explicitly filled or marked skipped; never inferred from competitive findings |
 | D14 | Visual improvisation | Prototype and implementation each invent visuals per screen | Ratified visual design specification with tokens and component inventory (§7.6); prototype and UI modules declare conformance |
-| D15 | Agent self-ratification | Agent-proposed amendments or designs proceed without owner decision | Structural rule (§13): the agent proposes, only the owner ratifies |
+| D15 | Agent self-ratification | Agent-proposed amendments or designs proceed without owner decision | Structural rule (§14): the agent proposes, only the owner ratifies |
+| D16 | Happy-path definition | Failure paths cover only what the owner imagined | Failure taxonomy per step (§13.1); unresolved cell fails G1 |
+| D17 | Silent invariant failure | Violation detected (or not) with no defined runtime behaviour | Enforcement point + violation response per invariant (§13.2) |
+| D18 | Vacuous gate | E2E gate passes because no spec exists | Coverage manifest asserted first (§13.3) |
+| D19 | Self-weakening tests | Adversarial or module agents relax assertions to pass | Add-only rule for agent-found failures; module sessions may not waive (§13.1, §13.4) |
 
 ---
 
-## 16. Roles, Agents, and Model Tiering
+## 17. Roles, Agents, and Model Tiering
 
 | Stage | Human role | Agent role | Model tier |
 |---|---|---|---|
@@ -433,7 +477,7 @@ The tiering principle is the same as in FMA §8: judgment and authorship at fron
 
 ---
 
-## 17. Harness Integration
+## 18. Harness Integration
 
 ODPD and FMA are packaged together as one suite of modular skills. The mechanism that makes the suite *guide* a user rather than merely exist is a **pipeline state file** (`PIPELINE.md`) at the repository root, recording which artefacts exist, which gates have passed, the PDD and visual-specification versions each artefact traces to, and the operating mode (FMA §9). Every skill declares the artefacts it requires, the artefacts it produces, and the gate it satisfies; it ends by updating the state file and naming the next skill. A router skill, invoked with no arguments, reads the state and tells the user where the project is and what comes next.
 
@@ -448,16 +492,17 @@ ODPD and FMA are packaged together as one suite of modular skills. The mechanism
 | new-module | FMA Workflow D | MODULES.md | Module from template |
 | module-session | FMA Workflow A | Ticket, module, contracts | Verified module change (five gates) |
 | visual-qa | Stage 6 / FMA gate 5 | Use cases, walkthrough records, visual spec | Generated E2E and screenshot tests; step-count assertions |
-| federation-review | FMA Workflows B/C | Contract diffs, module reports | Review artefacts, specs, sequencing; security section where required |
+| federation-review | FMA Workflows B/C | Contract diffs, module reports, adversarial findings | Review artefacts, specs, sequencing; security section where required; waivers; finding classification |
+| adversarial | FMA Workflow E | Running local env, invariants, failure paths | Findings report for federation classification; fault-injection runs |
 | adopt | Brownfield entry | Existing repository | Inventory, reverse-derived use cases, PIPELINE.md with gaps |
 
 For an existing project, **adopt** inventories the repository, maps what exists to the artefact set, reverse-derives use cases from the interface and route surface where no PDD exists, and writes a state file populated with gaps. From there the router behaves identically; the difference between greenfield and brownfield is only the initial state.
 
-The screen archetype library, the universal state set, and the abuse-case patterns are maintained as short reference files read by the experience-design and product-definition skills, not embedded in skill text, so they grow without bloating the method. The harness's `models.yaml` carries `definition` and `design` roles, both frontier-gated, alongside FMA's `spec`, `federation`, `module`, and `escalation` roles.
+The screen archetype library, the universal state set, the failure taxonomy, and the abuse-case patterns are maintained as short reference files read by the experience-design and product-definition skills, not embedded in skill text, so they grow without bloating the method. The harness's `models.yaml` carries `definition` and `design` roles, both frontier-gated, alongside FMA's `spec`, `federation`, `module`, and `escalation` roles.
 
 ---
 
-## 18. Open Questions
+## 19. Open Questions
 
 1. **Granularity of use cases.** How fine should use cases be before they stop being useful to designers and start being tickets in disguise? A working heuristic — one use case per actor-outcome pair — needs testing across product types.
 2. **Evidential weight of research.** Competitive research, user research on a prototype, and user research on a shipped product carry different weight, and the paper does not yet say how the owner should weigh conflicting findings — in particular when competitive patterns and observed user behaviour disagree.
@@ -469,7 +514,7 @@ The screen archetype library, the universal state set, and the abuse-case patter
 
 ---
 
-## 19. Conclusion
+## 20. Conclusion
 
 Federated Modular Architecture made agentic implementation safe by converting boundaries into infrastructure and judgment into verifiable specification. It left one failure unguarded: a defective specification is implemented faithfully everywhere. Outcome-Driven Product Definition closes that gap upstream. The owner builds the definition interactively and owns every change to it; outcomes are stated rigorously enough that the data model is derived rather than invented; the MVP is the smallest testable value, closed under its own preconditions; the experience is designed against outcomes and its prototype is verified by walkthrough; and a trace matrix with no empty cells gates the handoff into specification, where infrastructure and the local environment precede every module and every increment is verifiable from the first.
 

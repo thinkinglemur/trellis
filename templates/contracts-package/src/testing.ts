@@ -4,8 +4,23 @@
  * conformance is verified, not trusted (white paper §8.2).
  */
 import { describe, it, expect } from 'vitest';
-import type { ModuleManifest } from './index';
+import type { EntityStateMachine, ModuleManifest } from './index';
+import { assertTransition, InvariantViolation } from './index';
 import { CONTRACTS_VERSION } from './index';
+
+export function runTransitionTests<S extends string>(m: EntityStateMachine<S>): void {
+  describe(`transitions: ${m.entity}`, () => {
+    it('refuses every transition not in the allowed set (invariant refusal)', () => {
+      for (const from of m.states) for (const to of m.states) {
+        const allowed = m.transitions.some(([f, t]) => f === from && t === to);
+        if (!allowed) expect(() => assertTransition(m, from, to, 'test')).toThrow(InvariantViolation);
+      }
+    });
+    it('allows every declared transition', () => {
+      for (const [from, to] of m.transitions) expect(() => assertTransition(m, from, to, 'test')).not.toThrow();
+    });
+  });
+}
 
 export function runContractTests(manifest: ModuleManifest): void {
   describe(`contract conformance: ${manifest.name}`, () => {

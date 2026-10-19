@@ -1,7 +1,7 @@
 ---
 name: trellis-new-module
 description: >
-  FMA Workflow D. Use when the user says "new module", "create the <name> module", or the router sends
+  FMA Workflow D. Use when the user says "new module", "create the billing module", or the router sends
   them here to work through MODULES.md. Stamps a module from the base template — never by hand — populates
   its CLAUDE.md scope, seeds manifest routes/events/useCases from SPEC, and verifies it is born green.
 ---

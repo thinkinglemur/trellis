@@ -16,7 +16,8 @@ Read `../trellis/references/protocol.md` first. Role: `federation`. Architecture
 
 ## Inputs — these and ONLY these
 Contract diffs/proposals · module manifests (routes, emits, consumes, useCases) · module session reports ·
-[WORKFLOW-B] tickets · `packages/contracts/DECISIONS.md` (precedent). Never module internals (F4).
+[WORKFLOW-B] tickets · `federation/adversarial/*.md` findings · `packages/contracts/DECISIONS.md`
+(precedent). Never module internals (F4).
 
 ## Workflow B — contract change
 1. Draft in `packages/contracts/src/` on a branch; version per VERSIONING.md (breaking = major +
@@ -30,6 +31,13 @@ Contract diffs/proposals · module manifests (routes, emits, consumes, useCases)
 6. Artefact → `federation/reviews/YYYY-MM-DD-<slug>.md` with `## Human decision` block.
    Governed: STOP for engineer ratification. Fast: mark `auto`, queue in PIPELINE.md, proceed to fan-out.
 7. On ratification: append to DECISIONS.md; fan out specs (module role, per sequencing).
+
+## Workflow E — classify adversarial findings (with the engineer; never delegated downward)
+For each finding in the latest `federation/adversarial/` report: **defect** (violates an existing Fn/INV →
+Workflow A ticket, add-only assertions) or **unanticipated failure** (no Fn covers it → proposed failure
+path/INV to the owner via amendment loop → regenerate specs via trellis-visual-qa) or **not a failure**
+(record why in DECISIONS.md). Contract-level waivers and invariant/transition changes are decided here
+and ratified by the engineer. Fast mode: auto + queue.
 
 ## Workflow C — promotion
 Scan manifests + reports for convergent functionality. Tolerance test: PROVEN duplication with maintenance

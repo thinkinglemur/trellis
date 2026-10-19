@@ -27,6 +27,10 @@ roles:
     model: qwen3-coder:32b-q5_K_M
     endpoint: http://localhost:11434
     min_tier: any
+  audience:     # ODG audience + validation: room research, benchmark research, test design, drafting
+    provider: anthropic
+    model: claude-fable-5
+    min_tier: frontier
   escalation:   # after max_local_cycles failed verification loops
     provider: anthropic
     model: claude-sonnet-4-6
@@ -37,4 +41,4 @@ escalation:
   carry_context: summary
 
 enforcement:
-  refuse_small_model_for: [definition, design, spec, federation]
+  refuse_small_model_for: [definition, design, spec, federation, audience]

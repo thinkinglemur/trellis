@@ -18,7 +18,8 @@ Skip anything that exists. Simplicity rule: nothing beyond this list without a s
 
 1. `pnpm-workspace.yaml` → `packages: ["packages/*", "modules/*"]` if missing.
 2. **Contracts** → `packages/contracts/` from template. Generate types/events/schemas from SPEC's Contract
-   Surface incl. `requires` on every route and UseCaseEvent funnels. Extend `src/testing.ts` with contract
+   Surface incl. `requires` on every route, UseCaseEvent funnels, and each entity's closed state
+   enumeration + allowed transitions (`transitions.ts`, enforced by contract tests and a runtime guard). Extend `src/testing.ts` with contract
    tests per interface — BEFORE any module exists.
 3. **Boundary lint** → `eslint-boundaries.cjs` wired into flat config; root `lint` script.
 4. **CI** → `.github/workflows/trellis-ci.yml` (five gates + security substrate).
@@ -31,8 +32,18 @@ Skip anything that exists. Simplicity rule: nothing beyond this list without a s
     and error-tracker wiring (env-driven; no-op locally).
 11. **Security substrate**: `.env.example` + env validation; secret scanning in CI; dependency audit;
     auth scaffold reference in base module; classified-field redaction in the logger.
-12. **Local dev**: `docker-compose.yml` (postgres + app), seed script, `pnpm dev`, `pnpm verify`
+12. **Fault injection**: one env flag `TRELLIS_FAULT=<db|external|queue>[:<route>]` honoured by the data
+    layer and the external-call wrapper, making that dependency fail on demand. Local/test only; refuse to
+    start if set in production. Used by FT-06/FT-07 tests and trellis-adversarial.
+13. **Local dev**: `docker-compose.yml` (postgres + app), seed script, `pnpm dev`, `pnpm verify`
     (runs all five gates). Done when a clean checkout runs `pnpm verify` green with zero modules.
-13. Playwright installed + `test:e2e` script present (suite generated later by trellis-visual-qa).
+13b. **Shell module** (if the product has a UI): stamp `modules/shell` via the base template with
+    `role: 'shell'`; its CLAUDE.md declares it owns screen composition, navigation, and VISUAL-SPEC.md
+    conformance, may import `@modules/*/ui` only (lint exception), and owns every UC integration ticket.
+14. **Growth substrate**: event types `billing.*`, `referral.*`, `validation.*`, `feedback.submitted
+    {useCase, screen}` in contracts; feedback control as a base-module component; PMF survey trigger on
+    anchor-completion count (config, off until A5); one dashboard page over the events table (activation,
+    cohort retention, funnels, revenue, feedback themes). Nothing else — no metrics platform (ODG §8.5).
+15. Playwright installed + `test:e2e` script present (suite generated later by trellis-visual-qa).
 
 Verify: `pnpm install && pnpm verify`. Update PIPELINE.md `substrate: present`; `next: trellis-new-module`.

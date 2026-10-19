@@ -17,6 +17,9 @@ const moduleDirs = fs.existsSync(MODULES_DIR)
       .map((d) => d.name)
   : [];
 
+// Shell exception (ODPD §10.3): modules export components via ./ui; ONLY modules/shell may import them.
+const SHELL = 'shell';
+
 // For each module, forbid importing from every *other* module.
 module.exports = moduleDirs.map((mod) => ({
   files: [`modules/${mod}/**/*.{ts,tsx}`],
@@ -28,10 +31,16 @@ module.exports = moduleDirs.map((mod) => ({
           ...moduleDirs
             .filter((other) => other !== mod)
             .flatMap((other) => [
+              ...(mod === SHELL
+                ? [{ group: [`@modules/${other}`, `@modules/${other}/!(ui)`, `@modules/${other}/!(ui)/*`],
+                     message: `FMA boundary: shell may import only @modules/${other}/ui.` }]
+                : []),
+              ...(mod === SHELL ? [] : [
               { group: [`@modules/${other}`, `@modules/${other}/*`],
                 message: `FMA boundary: modules may not import other modules. Interact via @app/contracts. (attempted: ${other})` },
               { group: [`**/modules/${other}/*`],
                 message: `FMA boundary: relative reach into modules/${other} is forbidden.` },
+              ]),
             ]),
         ],
       },

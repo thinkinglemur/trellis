@@ -2,7 +2,7 @@
 name: trellis-module-session
 description: >
   FMA Workflow A — bounded implementation of one ticket in one module. Use when the user assigns a ticket,
-  says "implement ticket X", "work on the <name> module", or the router sends them here. Enforces the
+  says "implement ticket X", "work on the billing module", or the router sends them here. Enforces the
   module boundary, the five-gate verification loop, and the escalation policy from models.yaml. Designed
   to run safely on smaller local models. Role: module (any tier).
 ---
@@ -15,6 +15,11 @@ change. **Next:** next ticket, or trellis-federation-review if anything was flag
 
 The contract: at session end nothing outside `modules/<name>/` has changed and all five gates are green.
 
+**Single-worker form.** For a ticket larger than one sitting, or when the user wants parallelism, use
+`trellis-module-coordinator`, which splits the ticket into disjoint-file tasks and dispatches workers.
+If you were dispatched by a coordinator with a task brief, the brief's owned-files list REPLACES the
+module-wide scope below, you skip e2e (the coordinator runs it), and you return only the report format.
+
 ## Start
 1. One module, one ticket. Ticket tagged `[WORKFLOW-B]` or needing a contract change → STOP, route to
    trellis-federation-review. Non-negotiable however small the change.
@@ -25,7 +30,9 @@ The contract: at session end nothing outside `modules/<name>/` has changed and a
 
 ## Loop
 1. Write/update the ticket's named tests first. Implement the smallest change.
-2. Verify: typecheck → boundary lint → contract tests → module tests → `test:e2e --grep @uc:<ids>`.
+2. Verify in cost order: typecheck → boundary lint → contract tests → module tests. Run
+   `test:e2e --grep @uc:<ids>` ONLY when all four are green (coverage check runs with it: uncovered
+   failure paths for your UCs = red, and you cannot close the ticket). Never run e2e on a red build.
 3. Green → done. Red → fix, repeat. Emit UseCaseEvent funnel events for the UCs served (they are
    asserted by the e2e suite).
 4. After N failed cycles: escalate (summary of task, attempts, failing output) to the escalation role.
@@ -33,7 +40,8 @@ The contract: at session end nothing outside `modules/<name>/` has changed and a
 
 ## Hard rules
 - Nothing outside `modules/<name>/`. Not contracts, not other modules, not root config, not templates.
-- No weakening/skipping/deleting tests. No refactoring or "improving" beyond the ticket.
+- No weakening/skipping/deleting tests. No waiving a failure class. No changing an invariant, transition,
+  or `requires` role — those are contracts (Workflow B). No refactoring beyond the ticket.
 - Classified fields never in logs, events, or error payloads.
 - Conventional Commits: `feat(<name>): …`.
 
