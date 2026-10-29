@@ -79,6 +79,10 @@ module tier — that is what makes small models safe there.
   models.yaml, PIPELINE.md, root CLAUDE.md
 - `docs/` — the two white papers
 
+## Proposals
+
+- [0001 — Change-scoped engineering and unattended execution](proposals/0001-unattended-engineering-profile.md): proposed workflow profiles, evidence contracts, enforcement refinements and a bounded execution pilot. Not adopted; current skills and operating modes are unchanged.
+
 ## Install
 
 Claude Code / Cowork: install `trellis.plugin`. Other agents: the skills are plain markdown; point your
