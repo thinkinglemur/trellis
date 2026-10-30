@@ -18,6 +18,13 @@ a verified ticket. **Next:** next ticket, or trellis-federation-review if anythi
 The coordinator plans, dispatches, and verifies. It writes the stubs wave itself if no worker is
 available; it does not implement feature code in parallel with workers.
 
+## Factory delegation override
+When invoked by trellis-factory, local green gates mean **ready for independent review**, not ticket
+completion. Return diff/revision/check evidence to the factory coordinator; do not close TICKETS.md,
+update an external ticket, or overwrite shared PIPELINE.md. Factory independent verification and
+integrated-revision acceptance must finish before its authorised coordinator applies ticket policy.
+This override takes precedence over this skill's ordinary done/close instructions below.
+
 ## 1. Decompose (write TASKS.md from `${CLAUDE_PLUGIN_ROOT}/templates/TASKS.md`)
 - By **file ownership, not activity**: every task lists the files it owns; within a wave the sets are
   disjoint. A ticket that cannot be split into disjoint files is one task — that is fine.

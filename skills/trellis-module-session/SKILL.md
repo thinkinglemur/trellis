@@ -20,6 +20,13 @@ The contract: at session end nothing outside `modules/<name>/` has changed and a
 If you were dispatched by a coordinator with a task brief, the brief's owned-files list REPLACES the
 module-wide scope below, you skip e2e (the coordinator runs it), and you return only the report format.
 
+## Factory delegation override
+When invoked by trellis-factory (directly or through its module coordinator), local green gates mean
+**ready for independent review**, not ticket completion. Return diff/revision/check evidence; do not
+close TICKETS.md, update an external ticket, or overwrite shared PIPELINE.md. The factory coordinator
+owns independent review, integrated-revision acceptance and application of authoritative ticket policy.
+This overrides this skill's ordinary done/close instructions; worker reports cannot bypass acceptance.
+
 ## Start
 1. One module, one ticket. Ticket tagged `[WORKFLOW-B]` or needing a contract change → STOP, route to
    trellis-federation-review. Non-negotiable however small the change.
