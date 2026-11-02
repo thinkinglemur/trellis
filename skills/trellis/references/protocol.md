@@ -14,14 +14,28 @@
 - **governed**: every judgment decision (PDD amendment, MVP scope, data model, visual spec, contract change,
   promotion, walkthrough discrepancy resolution) STOPS and waits for the named human (owner or engineer).
 - **fast**: judgment decisions are auto-accepted, recorded where a human decision would be recorded, tagged
-  `auto`, and appended to `ratification_queue` in PIPELINE.md. Only escalation exhaustion
-  (`max_local_cycles` + `max_escalation_cycles`) interrupts the operator.
+  `auto`, and appended to `ratification_queue` in PIPELINE.md, subject to the never-auto exceptions
+  and factory stop conditions below. Escalation exhaustion always stops execution.
 - In BOTH modes the owner ratifies PDD v1 (G1), MVP selection (G2), every validation threshold and its
   derivation, and the A4 build/pivot/stop decision. Never auto-accept those.
 - Enforcement gates (typecheck, boundary lint, contract tests, module tests, e2e/visual) NEVER auto-accept.
 
+## Discovery and factory execution
+- Product definition uses its discovery-interview reference by default; confirmed understanding is
+  not gate ratification. Existing approved intent is inherited, not re-interviewed on every repair.
+- Approved implementation tickets route through `trellis-factory`, which delegates to existing module
+  skills and requires independent evidence. Direct module sessions still follow their existing gates;
+  their self-report alone does not satisfy factory acceptance.
+- Factory execution stops for absent authority/capability/evidence, exhausted limits or uncertain
+  effects in BOTH modes. Fast mode never grants merge/deploy/send/spend or broader data permissions.
+- G3 data-model ratification remains owner-only in every mode, as product-definition requires.
+- Explicit never-auto decisions and owner-required skill gates override generic auto+queue wording.
+  No automatic classification or rule change may authorise consequential external effects.
+
 ## Session end — every skill
 1. Update PIPELINE.md: `artefacts`, `gates`, versions, `ratification_queue`, and `next`.
+   Under concurrent factory execution, only the coordinator writes shared pipeline state; workers
+   return structured reports. Runtime claims/attempts belong to the durable harness, not Markdown.
 2. Append one line to the PIPELINE.md log: `YYYY-MM-DD · <skill> · <outcome> · <gate changes>`.
 3. State plainly: what was produced, what gate status changed, and the next skill to run.
 
@@ -44,4 +58,5 @@
 | A4 build / pivot / stop / override | validate skill presents options + implications | owner | never |
 | Hypothesis status (confirmed/refuted/refined) | learn skill presents evidence | owner + engineer | never |
 | Posting as the founder | — | nobody; agent drafts, owner posts | never |
-In fast mode "ratified by" becomes auto + queue; the "never" column does not change.
+In fast mode eligible "ratified by" decisions become auto + queue; explicit never-auto decisions,
+owner-required gates and factory authority/stop conditions take precedence. The "never" column does not change.

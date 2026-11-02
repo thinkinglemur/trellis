@@ -8,6 +8,9 @@ mode: governed            # governed | fast   (fast auto-ratifies judgment gates
 pdd_version: 0
 visual_spec_version: 0
 artefacts:
+  DISCOVERY.md: missing     # shared-understanding record, not gate ratification
+  WORK-PACKET.md: missing   # approved bounded execution inputs
+  RUN.md: missing           # single-writer evidence/handoff view, not a durable queue
   PDD.md: missing
   MVP.md: missing
   DATA-MODEL.md: missing

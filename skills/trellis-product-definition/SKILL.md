@@ -13,12 +13,27 @@ description: >
 Read `../trellis/references/protocol.md` first. Role: `definition`. This skill creates `PIPELINE.md`
 from `${CLAUDE_PLUGIN_ROOT}/templates/PIPELINE.md` if absent.
 
-**Requires:** an owner and a description. **Produces:** PDD.md, MVP.md, DATA-MODEL.md, TRACE.md.
+**Requires:** an owner and a description. **Produces:** DISCOVERY.md, PDD.md, MVP.md, DATA-MODEL.md, TRACE.md.
 **Gates:** G1, G2, G3 — owner-ratified in every mode. **Next:** trellis-experience-design.
 
-## Stage 1 — PDD (interactive, never batch)
-1. Ask for the owner's free-form description. Extract candidate actors, features, and implied use cases.
-   Present them back for correction. The owner corrects; you structure.
+## Discovery protocol — before derivation and when intent is unresolved
+Read and follow `references/discovery-interview.md`. Keep root DISCOVERY.md from
+`${CLAUDE_PLUGIN_ROOT}/templates/DISCOVERY.md` as the pause/resume decision record. Recover
+existing answers and approved artefacts before asking again; for changes, interview only
+the affected decisions and their dependencies. Distinguish inspectable facts from owner
+choices, recommendations from answers, and settled answers from formal ratification.
+Default to one decision at a time; an owner-selected batch may contain only independent
+questions, never batch use-case elaboration or approval. Track settled/open/assumed/deferred
+items and contradictions, their sources, and downstream blockers. Confirm shared understanding
+with the owner before downstream derivation. Discovery never supplies automatic authority,
+failure waivers, or G1/G2/G3 approval, including in fast mode.
+
+## Stage 1 — PDD (interactive, never batch use cases)
+1. Invite the owner's free-form description before structured questioning. Ask for a real
+   incident, workflow walkthrough, or concrete example where useful; clarify outcomes and
+   non-goals. Extract candidate actors, features, and implied use cases. Resolve prerequisite
+   decisions using the discovery protocol, then present the understanding for correction and
+   explicit confirmation. The owner supplies intent; you structure, not lead the answer.
 2. Elaborate ONE use case at a time (format: `references/pdd-template.md`):
    actors → preconditions → steps one at a time ("what does the actor do; what does the system do")
    → outcome → failure paths. Assign `UC-nnn`. Show a running PDD summary after each.
@@ -43,7 +58,14 @@ from `${CLAUDE_PLUGIN_ROOT}/templates/PIPELINE.md` if absent.
 2. Identify the **anchor use case**. Close the set backward under preconditions; forward one step to
    usability. Everything else → `MVP.md` backlog with dependencies recorded.
 3. Owner applies two tests: can a real user get the value? is anything here they don't need?
+   For unresolved value/scope tradeoffs, return to the discovery protocol: clarify intent,
+   explain downstream consequences, and separate recommendations from the owner's choices.
+   Confirm the revised understanding before deriving MVP scope; record exclusions and dependencies.
+   A changed PDD outcome requires the normal amendment/version and affected-trace process.
 4. Mark `MVP: yes|no` on every use case. G2 passed on owner ratification (never auto).
+   Discovery is complete only when material decisions are settled or explicitly owner-deferred
+   with downstream blockers recorded. Deferral is not approval: blocked derivations stay blocked,
+   incomplete failure-taxonomy cells still fail G1, and unresolved MVP closure/value blocks G2.
 
 ## Stage 3 — Data model (derived, never invented)
 1. Entities = persistent nouns in outcomes. States = enumerated values outcomes assign (closed set,

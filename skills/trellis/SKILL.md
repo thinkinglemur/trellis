@@ -29,8 +29,8 @@ Existing → hand off to `trellis-adopt`. Do not create PIPELINE.md yourself.
    G1–G3 → trellis-product-definition (and, from G1, trellis-audience in parallel: A1–A3) ·
    G4 → trellis-experience-design · G5 → trellis-prototype · A4 → trellis-validate (blocks G6) ·
    G6/G7 → trellis-workflow-zero → trellis-init → trellis-new-module (per MODULES.md row) →
-   trellis-visual-qa (generate e2e + coverage) → trellis-module-session (per ticket) or
-   trellis-module-coordinator (ticket > one sitting; parallel workers) ·
+   trellis-visual-qa (generate e2e + coverage) → trellis-factory (approved ticket delivery;
+   delegates to trellis-module-session or trellis-module-coordinator, then independent verification) ·
    phase end → trellis-adversarial → trellis-federation-review (classify) · build complete → trellis-learn
    (A5 launch gate, then weekly L sessions; L feeds Stage 2) ·
    [WORKFLOW-B]/promotion/waivers → trellis-federation-review
